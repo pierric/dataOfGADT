@@ -4,7 +4,14 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  hs-source-dirs:      .
+  hs-source-dirs:      src
   exposed-modules:     Data.Data.TH
   build-depends:       base >= 4.7 && < 5, syb, containers, template-haskell, mtl
   default-language:    Haskell2010
+  
+test-suite s1
+  type:               exitcode-stdio-1.0
+  main-is:            A.hs
+  hs-source-dirs:     test
+  build-depends:      hspec, QuickCheck, base >= 4.7 && < 5, dataOfGADT
+  default-language:   Haskell2010

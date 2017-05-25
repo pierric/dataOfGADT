@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, FlexibleContexts #-}
-module TH where
+module Data.Data.TH where
 
 import Control.Monad (when)
 import Data.Monoid
@@ -48,18 +48,18 @@ import Language.Haskell.TH
 --    instance Data (S4_3 Int Int)
 --  @ 
 --
---  Apart from the crafted newtype, a new type class 'ClassDataFromXX'
---  and a closed type family 'DataFromXX' is created, for an easy 
+--  Apart from the crafted newtype, a new type class 'ClassDataOfXX'
+--  and a closed type family 'DataOfXX' is created, for an easy 
 --  convertion from original data to crafted newtype.
 --  
 --  In the above example for data type S4, 
 --  @
---    type family DataFromS4 a where
---        DataFromS4 (S4 Int Int) = S4_3
---        DataFromS4 (S4 a a) = S4_2 a
---        DataFromS4 (S4 a b) = S4_1 a b
---    class ClassDataFromS4 a where
---        dataFromS4 :: a -> DataFromS4 a
+--    type family DataOfS4 a where
+--        DataOfS4 (S4 Int Int) = S4_3
+--        DataOfS4 (S4 a a) = S4_2 a
+--        DataOfS4 (S4 a b) = S4_1 a b
+--    class ClassDataOfS4 a where
+--        dataOfS4 :: a -> DataOfS4 a
 --  @
 --  
 deriveDataGADT :: Name -> DecsQ
@@ -89,9 +89,9 @@ deriveDataGADT t = do
                 ntd <- newtypeD (return []) ti tb Nothing (normalC ti [sv]) (return [])
                 return (ntd, ti, nt, ty)
         
-        -- closed type family: DataFromXX
+        -- closed type family: DataOfXX
         -- help to decide which newtype should be chosen.
-        let tfnm = mkName ("DataFrom" ++ nameBase t)
+        let tfnm = mkName ("DataOf" ++ nameBase t)
         tfvr <- newName "a"
         tf <- closedTypeFamilyD tfnm [PlainTV tfvr] noSig Nothing $
                 map (\(_, _, dty, sty) -> tySynEqn [return sty] (return dty)) dt
@@ -99,10 +99,10 @@ deriveDataGADT t = do
         -- derive Data instance for all newtypes
         dr <- mapM (drvInstData m) dt
 
-        -- ClassDataFromXX: the helper class for converting
+        -- ClassDataOfXX: the helper class for converting
         -- from orignal type to a newtype, which is instance
         -- of Data.
-        dc <- dataFromClass t tfnm dt
+        dc <- dataOfClass t tfnm dt
 
         (dt, _, _, _) <- return (unzip4 dt)
         return $ dt ++ [tf] ++ (concat dr) ++ dc
@@ -172,13 +172,13 @@ deriveDataGADT t = do
 
       return $ condelcs ++ [tydecl, indecl]
 
-    dataFromClass classnm tyfunnm datainfo = do
+    dataOfClass classnm tyfunnm datainfo = do
       tyvarA <- newName "a"
       tyvarB <- newName "b"
-      let classNameB    = "ClassDataFrom" ++ nameBase classnm
+      let classNameB    = "ClassDataOf" ++ nameBase classnm
           className     = mkName classNameB
           className'    = mkName (classNameB ++ "'")
-          classFunNameB = "dataFrom" ++ nameBase classnm
+          classFunNameB = "dataOf" ++ nameBase classnm
           classFunName  = mkName classFunNameB
           classFunName' = mkName (classFunNameB ++ "'")
       c1 <- classD (return []) className [PlainTV tyvarA] []
